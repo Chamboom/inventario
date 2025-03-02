@@ -1,45 +1,43 @@
-version: "2"
+name: PHP CI with CodeClimate
+
+on:
+  push:
+    branches:
+      - main       # Trigger the workflow on push to the 'main' branch
+  pull_request:
+    branches:
+      - main       # Trigger the workflow on pull request targeting the 'main' branch
+
 jobs:
   analyze:
-    docker:
-      - image: "php:7.4-cli"  # Use the PHP Docker image for analysis
-    steps:
-      - run:
-          name: Install Dependencies
-          command: |
-            apt-get update
-            apt-get install -y git unzip libpng-dev libjpeg-dev libfreetype6-dev
-            docker-php-ext-configure gd --with-freetype --with-jpeg
-            docker-php-ext-install gd
-            curl -sS https://getcomposer.org/installer | php
-            mv composer.phar /usr/local/bin/composer
-            composer install --prefer-dist --no-progress --no-suggest
-      - run:
-          name: Run CodeClimate Analysis
-          command: |
-            curl -L https://github.com/codeclimate/codeclimate/releases/download/v0.88.0/codeclimate-linux-amd64-0.88.0.tar.gz -o codeclimate.tar.gz
-            tar xzf codeclimate.tar.gz
-            ./codeclimate analyze
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
-  test:
-    docker:
-      - image: "php:7.4-cli"  # Use the PHP Docker image for running tests
     steps:
-      - run:
-          name: Install Dependencies
-          command: |
-            apt-get update
-            apt-get install -y git unzip
-            curl -sS https://getcomposer.org/installer | php
-            mv composer.phar /usr/local/bin/composer
-            composer install --prefer-dist --no-progress --no-suggest
-      - run:
-          name: Run PHP Tests
-          command: |
-            ./vendor/bin/phpunit --configuration phpunit.xml
+      # Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-workflows:
-  version: "2"
-  default:
-    - analyze
-    - test
+      # Set up PHP
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'  # Specify PHP version here
+
+      # Install dependencies (e.g., Composer)
+      - name: Install dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          mv composer.phar /usr/local/bin/composer
+          composer install --no-progress --no-suggest
+
+      # Install CodeClimate CLI
+      - name: Install CodeClimate CLI
+        run: |
+          curl -L https://github.com/codeclimate/codeclimate/releases/download/v0.88.0/codeclimate-linux-amd64-0.88.0.tar.gz -o codeclimate.tar.gz
+          tar xzf codeclimate.tar.gz
+          mv codeclimate /usr/local/bin/codeclimate
+
+      # Run CodeClimate analysis
+      - name: Run CodeClimate analysis
+        run: |
+          codeclimate analyze
