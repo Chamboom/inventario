@@ -1,0 +1,54 @@
+name: CodeClimate Analysis
+
+on:
+   push:
+   branches:
+      - main
+  pull_request:
+    branches:
+    - main
+
+  jobs:
+    codeclimate:
+      runs-on: ubuntu-latest
+      steps:
+      # Paso 1: Hacer checkout del codigo fuente
+      - name: Checkout code
+      uses: actions/checkout@v2
+
+      # Paso 2: Instalar PHP
+      - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+      php-version: '7.4'
+
+      # Paso 3
+      - name: Install dependencies
+      run: |
+      curl -sS https://getcomposer.org/installer | php
+      php composer.phar install --no-interaction
+
+      #4
+      - name: Install CodeClimate CLI
+      run: |
+      curl -L https://github.com/codeclimate/codeclimate-test-reporter/releases/download/v0.6.3/codeclimate-test-reporter-0.6.3-linux-amd64 >usr/local/bin/codeclimate
+      chmod +x /usr/local/bin/codeclimate
+
+      # paso 5
+      - name: Run PHP_CodeSniffer
+      run: |
+        vendor/bin/phpcs --standard=PSR2 src/ # Adjust la ruta 'src/' a tu estructura de proyecto
+      - name: Run PHPStan
+      run: |
+        vendor/bin/phpstan analyse --level=5 src/ # Ajusta la ruta 'src/' # Ajusta la ruta 'src/' a tu estructura de proyecto
+
+      - name: Run PHP Mess Detector (PHPMD)
+        run: |
+          vendor/bin/phpmd src/ textcleancode, codesize, controversial, design, naming, unusedcode # Ajusta la ruta 'src/' a tu estructura de proyecto
+        # paso 6
+        - name: Upload CodeClimate results
+          run: |
+            codeclimate analize
+        
+      
+      
